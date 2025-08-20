@@ -1,103 +1,174 @@
-import Image from "next/image";
+'use client'
+
+import { useState } from 'react'
+import { toast, Toaster } from 'react-hot-toast'
+import FileUpload from './components/FileUpload'
+import ProcessButton from './components/ProcessButton'
+import PDFViewer from './components/PDFViewer'
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.js
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [templateFile, setTemplateFile] = useState(null)
+  const [documentFiles, setDocumentFiles] = useState([])
+  const [generatedPDF, setGeneratedPDF] = useState(null)
+  const [isProcessing, setIsProcessing] = useState(false)
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const handleTemplateUpload = async (file) => {
+    try {
+      const formData = new FormData()
+      formData.append('template', file)
+      
+      const response = await fetch('/api/extract-template', {
+        method: 'POST',
+        body: formData,
+      })
+      
+      if (response.ok) {
+        setTemplateFile(file)
+        toast.success('Template berhasil diupload dan diproses!', {
+          duration: 3000,
+          position: 'top-center',
+          style: {
+            background: 'rgba(34, 197, 94, 0.1)',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(34, 197, 94, 0.2)',
+            color: '#16a34a'
+          }
+        })
+      } else {
+        throw new Error('Failed to process template')
+      }
+    } catch (error) {
+      toast.error('Gagal memproses template')
+    }
+  }
+
+  const handleDocumentUpload = (files) => {
+    setDocumentFiles(files)
+    toast.success(`${files.length} dokumen berhasil diupload!`)
+  }
+
+  const processDocuments = async () => {
+    if (!templateFile || documentFiles.length === 0) return
+
+    setIsProcessing(true)
+    try {
+      const formData = new FormData()
+      documentFiles.forEach(file => {
+        formData.append('documents', file)
+      })
+
+      const response = await fetch('/api/process-documents', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (response.ok) {
+        const { summary } = await response.json()
+        
+        // Generate PDF
+        const pdfResponse = await fetch('/api/generate-pdf', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ summary }),
+        })
+
+        if (pdfResponse.ok) {
+          const blob = await pdfResponse.blob()
+          const url = URL.createObjectURL(blob)
+          setGeneratedPDF(url)
+          toast.success('PDF berhasil dibuat!')
+        }
+      }
+    } catch (error) {
+      toast.error('Gagal memproses dokumen')
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
+      <Toaster />
+      
+      {/* Hero Section */}
+      <div className="container mx-auto px-4 py-16">
+        <div className="text-center mb-16">
+          <h1 className="text-6xl font-bold text-white mb-6 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+            PDF to LaTeX Converter
+          </h1>
+          <p className="text-xl text-blue-200 max-w-3xl mx-auto leading-relaxed">
+            Upload template dan dokumen pemerintah untuk menghasilkan laporan PDF yang terstruktur menggunakan AI dan LaTeX
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        {/* Glass Cards */}
+        <div className="max-w-6xl mx-auto space-y-8">
+          {/* Template Upload Card */}
+          <div className="backdrop-blur-lg bg-white/10 rounded-3xl p-8 border border-white/20 shadow-2xl">
+            <h2 className="text-2xl font-semibold text-white mb-6 flex items-center">
+              <span className="bg-gradient-to-r from-blue-400 to-purple-400 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white mr-3">
+                1
+              </span>
+              Upload Template
+            </h2>
+            <FileUpload
+              onFileUpload={handleTemplateUpload}
+              acceptedTypes=".pdf"
+              multiple={false}
+              label="Upload template PDF yang akan dijadikan acuan struktur"
+              uploaded={!!templateFile}
+            />
+          </div>
+
+          {/* Document Upload Card */}
+          <div className="backdrop-blur-lg bg-white/10 rounded-3xl p-8 border border-white/20 shadow-2xl">
+            <h2 className="text-2xl font-semibold text-white mb-6 flex items-center">
+              <span className="bg-gradient-to-r from-blue-400 to-purple-400 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white mr-3">
+                2
+              </span>
+              Upload Dokumen Laporan
+            </h2>
+            <FileUpload
+              onFileUpload={handleDocumentUpload}
+              acceptedTypes=".pdf"
+              multiple={true}
+              label="Upload dokumen laporan pemerintah (bisa beberapa file sekaligus)"
+              disabled={!templateFile}
+              uploaded={documentFiles.length > 0}
+            />
+          </div>
+
+          {/* Process Button */}
+          <div className="backdrop-blur-lg bg-white/10 rounded-3xl p-8 border border-white/20 shadow-2xl">
+            <h2 className="text-2xl font-semibold text-white mb-6 flex items-center">
+              <span className="bg-gradient-to-r from-blue-400 to-purple-400 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white mr-3">
+                3
+              </span>
+              Proses dengan AI
+            </h2>
+            <ProcessButton
+              onProcess={processDocuments}
+              disabled={!templateFile || documentFiles.length === 0}
+              isProcessing={isProcessing}
+            />
+          </div>
+
+          {/* PDF Viewer */}
+          {generatedPDF && (
+            <div className="backdrop-blur-lg bg-white/10 rounded-3xl p-8 border border-white/20 shadow-2xl">
+              <h2 className="text-2xl font-semibold text-white mb-6 flex items-center">
+                <span className="bg-gradient-to-r from-green-400 to-blue-400 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white mr-3">
+                  ✓
+                </span>
+                Hasil PDF
+              </h2>
+              <PDFViewer pdfUrl={generatedPDF} />
+            </div>
+          )}
+        </div>
+      </div>
     </div>
-  );
+  )
 }

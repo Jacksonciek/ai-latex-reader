@@ -1,0 +1,55 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+
+% Header and footer
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\thepage}
+\lhead{{{DOCUMENT_TITLE}}}
+
+% Title formatting
+\titleformat{\section}{\large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{1em}{}
+
+\begin{document}
+
+\begin{titlepage}
+\centering
+\vspace*{2cm}
+{\Huge\bfseries {{DOCUMENT_TITLE}}}\\[0.5cm]
+{\Large {{DOCUMENT_SUBTITLE}}}\\[1.5cm]
+{\large {{AUTHOR_NAME}}}\\[0.5cm]
+{\normalsize {{INSTITUTION}}}\\[2cm]
+\vfill
+{\large {{DATE}}}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+\section{Executive Summary}
+{{EXECUTIVE_SUMMARY}}
+
+\section{Introduction}
+{{INTRODUCTION}}
+
+\section{Main Content}
+{{MAIN_CONTENT}}
+
+\section{Analysis}
+{{ANALYSIS}}
+
+\section{Recommendations}
+{{RECOMMENDATIONS}}
+
+\section{Conclusion}
+{{CONCLUSION}}
+
+\end{document}
